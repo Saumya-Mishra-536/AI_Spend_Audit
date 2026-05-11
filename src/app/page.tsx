@@ -1,4 +1,4 @@
-import { AuditForm } from '@/components/audit-form';
+import AuditForm from "../components/audit-form";
 import { Zap, TrendingDown, Shield } from 'lucide-react';
 
 export default function HomePage() {
