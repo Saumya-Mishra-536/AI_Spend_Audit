@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import type { AuditResult } from '@/lib/types';
 
 interface AISummaryProps {
@@ -10,63 +9,70 @@ interface AISummaryProps {
 }
 
 export function AISummary({ result }: AISummaryProps) {
-  const [summary, setSummary] = useState<string>('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    async function fetchSummary() {
-      try {
-        const response = await fetch('/api/generate-summary', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ result }),
-        });
-
-        const data = await response.json();
-        
-        if (data.summary) {
-          setSummary(data.summary);
-        } else {
-          setError(true);
-        }
-      } catch (err) {
-        console.error('Failed to generate summary:', err);
-        setError(true);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchSummary();
-  }, [result]);
-
-  // Fallback summary if AI fails
-  const fallbackSummary = result.isOptimized
-    ? `Your current AI tool setup is well-optimized for your team size and use case. You're making smart choices with your ${result.recommendations.length === 0 ? 'current stack' : 'spending'}.`
-    : `Based on your team of ${result.recommendations[0]?.tool ? 'users' : 'members'}, we found ${result.recommendations.length} optimization${result.recommendations.length !== 1 ? 's' : ''} that could save you $${result.totalMonthlySavings.toFixed(0)} per month. The biggest opportunity is in ${result.recommendations[0]?.tool.replace('-', ' ')} where ${result.recommendations[0]?.reasoning.toLowerCase()}`;
+  const summary = generateSmartSummary(result);
 
   return (
     <Card className="mb-8 border-purple-200 bg-gradient-to-br from-purple-50 to-white">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-purple-600" />
-          AI Analysis
+          Personalized Analysis
         </CardTitle>
-        <CardDescription>Personalized insights for your team</CardDescription>
+        <CardDescription>Based on your team's usage patterns</CardDescription>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
-          <div className="flex items-center gap-2 text-slate-500">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            <span>Generating personalized analysis...</span>
-          </div>
-        ) : (
-          <p className="text-slate-700 leading-relaxed">
-            {error || !summary ? fallbackSummary : summary}
-          </p>
-        )}
+        <p className="text-slate-700 leading-relaxed">{summary}</p>
       </CardContent>
     </Card>
   );
+}
+
+function generateSmartSummary(result: AuditResult): string {
+  // If already optimized
+  if (result.isOptimized) {
+    return `Your current AI tool setup is well-optimized. You're making smart choices with your spending, and there are no major changes needed right now. Keep monitoring as your team grows, and we'll let you know if better options emerge.`;
+  }
+
+  // If has recommendations
+  const topRec = result.recommendations[0];
+  const hasMultiple = result.recommendations.length > 1;
+  const isHighSavings = result.totalMonthlySavings >= 500;
+
+  // Build personalized summary
+  let summary = '';
+
+  // Opening based on savings amount
+  if (isHighSavings) {
+    summary += `Your team has significant optimization opportunities. `;
+  } else if (result.totalMonthlySavings >= 200) {
+    summary += `You're leaving money on the table with your current setup. `;
+  } else {
+    summary += `There are a few quick wins in your AI tool stack. `;
+  }
+
+  // Main recommendation
+  if (topRec) {
+    const toolName = topRec.tool.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    summary += `Your biggest opportunity is with ${toolName} — ${topRec.reasoning.split('.')[0]}. `;
+    
+    if (topRec.monthlySavings >= 100) {
+      summary += `That alone saves you $${topRec.monthlySavings.toFixed(0)} per month. `;
+    }
+  }
+
+  // Additional context
+  if (hasMultiple) {
+    summary += `We found ${result.recommendations.length} optimizations total, which together could free up $${result.totalMonthlySavings.toFixed(0)} per month. `;
+  }
+
+  // Call to action based on savings
+  if (isHighSavings) {
+    summary += `With this level of savings, you're a great fit for Credex's discounted enterprise credits—we can help you capture even more value beyond these plan changes.`;
+  } else if (result.totalMonthlySavings >= 100) {
+    summary += `Start with the top recommendation for the quickest win, then tackle the rest over the next quarter.`;
+  } else {
+    summary += `These are easy switches that add up over time—worth 30 minutes to implement.`;
+  }
+
+  return summary;
 }
