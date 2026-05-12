@@ -6,7 +6,7 @@ import type { AuditInput } from '@/lib/types';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
+
     const input: AuditInput = {
       tools: body.tools.map((t: any) => ({
         tool: t.tool,
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const result = runAudit(input);
 
-    // Store audit in database for shareable URLs
+    // Store in Supabase for shareable URLs
     const { error } = await supabase.from('audits').insert({
       id: result.id,
       recommendations: result.recommendations,
@@ -30,15 +30,18 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error('Failed to store audit:', error);
-      // Don't fail the request if storage fails
+      console.error('Supabase insert error:', error.message);
+      // Don't fail the request - audit still works without storage
     }
 
     return NextResponse.json(result);
   } catch (error) {
     console.error('Audit API error:', error);
     return NextResponse.json(
-      { error: 'Failed to run audit' },
+      {
+        error: 'Failed to run audit',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     );
   }
