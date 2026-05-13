@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "tailwindcss";
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -33,3 +34,45 @@ body {
   background: white;
   color: black;
 }
+
+/* Keep dropdown/popover rules so dropdown background is opaque and overlay works */
+/* Ensure popovers / dropdowns are opaque and sit above page content */
+[data-state="open"] {
+  z-index: 9999; /* push open dropdowns above most content */
+}
+
+/* Force popover background to use palette and remove transparency that lets the page show through */
+.bg-popover,
+.text-popover-foreground,
+body [class*="bg-popover"],
+body [class*="popover"] {
+  background-color: hsl(var(--popover)) !important;
+  color: hsl(var(--popover-foreground)) !important;
+}
+
+/* Extra safe rule for Radix select/content elements (covers a broad set of classnames/attributes) */
+[data-state] > [class*="bg-popover"],
+[data-state] > [class*="popover"] {
+  background-color: hsl(var(--popover)) !important;
+}
+
+/* Subtle shadow for dropdowns */
+.shadow-popover,
+.bg-popover {
+  box-shadow: 0 10px 30px rgba(66, 38, 120, 0.12);
+  border: 1px solid hsl(var(--border));
+}
+
+/* Overlay scoped to our select content open state */
+body:has(.app-dropdown-content[data-state="open"])::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.0), rgba(240,232,255,0.4));
+  backdrop-filter: blur(4px) saturate(110%);
+  z-index: 9990; /* just under dropdowns */
+  pointer-events: none;
+}
+
+/* Accessibility: ensure form inputs and triggers remain visible and not clipped */
+* { box-sizing: border-box; }
