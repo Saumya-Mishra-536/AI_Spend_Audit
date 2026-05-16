@@ -1,11 +1,17 @@
 import AuditForm from "../components/audit-form";
 import { Zap, TrendingDown, Shield } from 'lucide-react';
+import { Button } from '../components/ui/button';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-16">
+        <div className="flex justify-end mb-6">
+          <Button asChild variant="outline">
+            <a href="/api/auth">Login</a>
+          </Button>
+        </div>
         <div className="text-center max-w-3xl mx-auto mb-12">
           <h1 className="text-5xl font-bold tracking-tight mb-4">
             Stop Overpaying for AI Tools
